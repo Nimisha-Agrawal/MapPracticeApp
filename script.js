@@ -1,7 +1,37 @@
 'use strict';
 // prettier-ignore
+const update_location_time = 15;
+let interval;
 
+function getCurrentPosition(marker){
 if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        //console.log(latitude, longitude);
+        console.log(`https://www.google.com/maps/@${latitude},${longitude},15z`);
+        marker.setLatLng([latitude,longitude]).addTo(map).bindPopup(L.popup({ maxWidth: 250, minWidth: 100, autoClose: false, closeOnClick: false }))
+        .setPopupContent("A Marker : You are at "+marker.getLatLng().toString())//A Marker : You are within " + radius + " meters from this point
+        .openPopup();
+        init([latitude, longitude]);
+        //return [latitude, longitude];
+    },
+    (error) => {
+        alert(error);
+    })
+}
+}
+
+    let setTimer = () => {
+        interval = setInterval(() => {
+            clearInterval(interval);
+            getCurrentPosition(marker);
+            //callbackfn({latlng:new L.latLng(getCurrentPosition())});
+            // navigator.geolocation.getCurrentPosition((pos)=>{
+            // callbackfn({latlng:[pos.coords.latitude,pos.coords.longitude]});
+            // })
+        }, update_location_time);
+    }
+
     function createPolyLine(sourcePoint, destinationPoint, map) {
         // let latLngBounds = L.latLng(sourcePoint).toBounds(10);
         // L.rectangle(latLngBounds, { color: 'red' }).addTo(map);
@@ -47,35 +77,49 @@ if (navigator.geolocation) {
         createPolyLine(sourcePoint, destinationPoint, map);
     }
 
-    navigator.geolocation.getCurrentPosition((position) => {
-        const { latitude, longitude } = position.coords;
-        console.log(latitude, longitude);
-        console.log(`https://www.google.com/maps/@${latitude},${longitude},15z`);
-        const coords = [latitude, longitude];
-        const map = L.map('map').setView(coords, 16);//13
-        //const map = L.map('map').fitWorld();
-        map.locate({ setView: true, maxZoom: 16 });//13
-        function onLocationFound(e) {
-            var radius = e.accuracy;
-
-            L.marker(e.latlng).addTo(map)
-                .bindPopup(L.popup({ maxWidth: 250, minWidth: 100, autoClose: false, closeOnClick: false }))
-                .setPopupContent("A Marker : You are within " + radius + " meters from this point")//"A Marker : You are at " + "[ " + latitude + ", " + longitude + " ]"
-                .openPopup();
-
-            L.circle(e.latlng, radius).addTo(map);
+    function onLocationFound(e) {
+        let radius = e.accuracy;
+        marker.setLatLng(e.latlng).update().bindPopup(L.popup({ maxWidth: 250, minWidth: 100, autoClose: false, closeOnClick: false }))
+        .setPopupContent("A Marker : You are at "+marker.getLatLng().toString())//A Marker : You are within " + radius + " meters from this point
+        .openPopup();
+        map.locate({setView: true, watch:true, maxZoom: 13});
+        //map.setView(marker.getLatLng(),13); 
+        //alert('Marker has been set to position :'+marker.getLatLng().toString());
+        // L.marker(e.latlng).addTo(map)
+        //     .bindPopup(L.popup({ maxWidth: 250, minWidth: 100, autoClose: false, closeOnClick: false }))
+        //     .setPopupContent("A Marker : You are within " + radius + " meters from this point")//"A Marker : You are at " + "[ " + latitude + ", " + longitude + " ]"
+        //     .openPopup();
+        if(e.accuracy){
+        L.circle(e.latlng, radius).addTo(map);
         }
+    }
 
+    function onLocationError(e) {
+        alert(e.message);
+    }
+
+        const init = function(coords){
+        console.log(coords);
+        //map.locate({ setView: true, maxZoom: 16 });//13
+      
         map.on('locationfound', onLocationFound);
-
-        function onLocationError(e) {
-            alert(e.message);
-        }
-
+       
         map.on('locationerror', onLocationError);
 
-        computeDestination(latitude, longitude, map);
-        //https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png
+        computeDestination(coords[0], coords[1], map);
+    
+        setTimer();
+        };
+
+       
+        //const map = L.map('map').setView(coords, 16);//13
+        const map = L.map('map').fitWorld();//,{center: coords, zoom: 16}
+         //https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png
+       
+        //map.locate({setView: true, maxZoom: 13});
+        const marker = L.marker(map.getCenter(),{draggable:true,zIndexOffset:1000});
+
+        getCurrentPosition(marker);
         const id = 'mapbox/streets-v11';
         const accessToken = 'pk.eyJ1IjoibmltaXNoYTEyMSIsImEiOiJja3hnMTI1b3UzbDBuMndvNXRldnl6M3ZkIn0.a4DDmXkE1ps7BPwwswAxpg'
         L.tileLayer(`https://api.mapbox.com/styles/v1/${id}/tiles/{z}/{x}/{y}?access_token=${accessToken}`, {
@@ -85,18 +129,16 @@ if (navigator.geolocation) {
             zoomOffset: -1,
         }).addTo(map);
 
-        map.on('click', function (mapEvent) {
-            console.log(mapEvent);
-            const { lat, lng } = mapEvent.latlng;
-            L.marker([lat, lng]).addTo(map)
-                .bindPopup(L.popup({ maxWidth: 250, minWidth: 100, autoClose: false, closeOnClick: false }))
-                .setPopupContent("You clicked the map at " + mapEvent.latlng.toString())
-                .openPopup();
-        });
-    },
-        function () {
-            alert("Could not get your position");
-        })
+        //init(coords);
+        
+        // map.on('click', function (mapEvent) {
+        //     console.log(mapEvent);
+        //     const { lat, lng } = mapEvent.latlng;
+        //     L.marker([lat, lng]).addTo(map)
+        //         .bindPopup(L.popup({ maxWidth: 250, minWidth: 100, autoClose: false, closeOnClick: false }))
+        //         .setPopupContent("You clicked the map at " + mapEvent.latlng.toString())
+        //         .openPopup();
+        // });
 
-}
+
 
